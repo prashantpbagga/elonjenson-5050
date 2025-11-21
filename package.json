@@ -1,0 +1,11 @@
+{
+  "name": "index-basket-studio",
+  "version": "1.0.0",
+  "description": "Interactive investment basket builder with backend pricing service",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js",
+    "test": "node --test"
+  }
+}

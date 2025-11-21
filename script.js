@@ -3,11 +3,60 @@ const basketContainer = document.getElementById('basket');
 const performanceChart = document.getElementById('performanceChart');
 let chart;
 
+const strategyMap = {
+  steady: 'Recurring cadence',
+  opportunistic: 'Async deployments on signals',
+  value: 'Value tilt with guardrails',
+  growth: 'Growth tilt with momentum bias',
+};
+
+async function fetchQuotes(symbols) {
+  const params = new URLSearchParams({ symbols: symbols.join(',') });
+  const response = await fetch(`/api/quotes?${params.toString()}`);
+  if (!response.ok) throw new Error('Unable to fetch quotes');
+  const data = await response.json();
+  return data.quotes || [];
+}
+
+async function refreshAllocations() {
+  if (!basket.length) return;
+  const contribution = getContributionAmount();
+  try {
+    const response = await fetch('/api/basket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        basket: basket.map((item) => ({ symbol: item.ticker, allocation: item.weight })),
+        contribution,
+      }),
+    });
+    if (!response.ok) throw new Error('Allocation request failed');
+    const data = await response.json();
+    data.positions.forEach((position) => {
+      const target = basket.find((item) => item.ticker.toUpperCase() === position.symbol.toUpperCase());
+      if (target) {
+        target.latestPrice = position.latestPrice;
+        target.currency = position.currency;
+        target.estimatedShares = position.estimatedShares;
+        target.timestamp = position.timestamp;
+      }
+    });
+  } catch (err) {
+    console.error('refreshAllocations error', err);
+  }
+  renderBasket();
+}
+
 function renderBasket() {
   basketContainer.innerHTML = '';
   basket.forEach((item, index) => {
     const card = document.createElement('div');
     card.className = 'basket-card';
+    const priceLine = item.latestPrice
+      ? `<div class="price-line">${item.currency || 'USD'} ${item.latestPrice.toFixed(2)} · est. shares ${
+          item.estimatedShares ?? 0
+        } · ${new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`
+      : '<div class="price-line muted">Price pending...</div>';
     card.innerHTML = `
       <header>
         <div>
@@ -16,6 +65,7 @@ function renderBasket() {
         <span class="weight">${item.weight}%</span>
       </header>
       <p>${item.summary}</p>
+      ${priceLine}
       <div class="strategy-pill">${item.strategyLabel}</div>
       <button class="btn ghost" data-index="${index}">Remove</button>
     `;
@@ -23,6 +73,7 @@ function renderBasket() {
       basket.splice(index, 1);
       renderBasket();
       updateChart();
+      refreshAllocations();
     });
     basketContainer.appendChild(card);
   });
@@ -86,7 +137,7 @@ function updateChart() {
   });
 }
 
-function addCompany() {
+async function addCompany() {
   const company = document.getElementById('company').value.trim();
   const ticker = document.getElementById('ticker').value.trim();
   const weight = Number(document.getElementById('weight').value);
@@ -94,25 +145,37 @@ function addCompany() {
 
   if (!company || !ticker || !weight) return;
 
-  const strategyMap = {
-    steady: 'Recurring cadence',
-    opportunistic: 'Async deployments on signals',
-    value: 'Value tilt with guardrails',
-    growth: 'Growth tilt with momentum bias',
-  };
-
   const summary = `${weight}% allocated to ${company} (${ticker.toUpperCase()}) with ${strategyMap[strategy].toLowerCase()}.`;
-
-  basket.push({ company, ticker, weight, strategyLabel: strategyMap[strategy], summary });
+  const entry = { company, ticker, weight, strategyLabel: strategyMap[strategy], summary };
+  basket.push(entry);
   renderBasket();
   updateChart();
+
+  try {
+    const quotes = await fetchQuotes([ticker]);
+    if (quotes.length) {
+      entry.latestPrice = quotes[0].price;
+      entry.currency = quotes[0].currency;
+      entry.timestamp = quotes[0].timestamp;
+      renderBasket();
+    }
+  } catch (err) {
+    console.error('Unable to fetch quote for', ticker, err);
+  }
+
+  await refreshAllocations();
+}
+
+function getContributionAmount() {
+  const value = Number(document.getElementById('recurring-amount')?.value || 500);
+  return Number.isFinite(value) && value > 0 ? value : 500;
 }
 
 function simulateProjection() {
   const growth = Number(document.getElementById('growth').value) / 100;
   const years = Number(document.getElementById('projection').value);
   const frequency = document.getElementById('frequency').value;
-  const baseContribution = 500;
+  const baseContribution = getContributionAmount();
   const cadenceMultiplier = { monthly: 12, weekly: 52, quarterly: 4, 'one-time': 1 }[frequency];
 
   const contributions = baseContribution * cadenceMultiplier;
@@ -153,6 +216,8 @@ function bindActions() {
   document.getElementById('start-recurring').addEventListener('click', () => alert('Recurring plan scheduled.'));
   document.getElementById('start-async').addEventListener('click', () => alert('Async reserve armed.'));
   document.getElementById('set-guardrail').addEventListener('click', () => alert('Performance guardrail saved.'));
+  const recurringInput = document.getElementById('recurring-amount');
+  recurringInput.addEventListener('change', refreshAllocations);
 }
 
 function initDefaults() {
@@ -163,20 +228,15 @@ function initDefaults() {
     { company: 'Costco', ticker: 'COST', weight: 25, strategy: 'value' },
   ];
   defaults.forEach((item) => {
-    const strategyMap = {
-      steady: 'Recurring cadence',
-      opportunistic: 'Async deployments on signals',
-      value: 'Value tilt with guardrails',
-      growth: 'Growth tilt with momentum bias',
-    };
     basket.push({
       ...item,
       strategyLabel: strategyMap[item.strategy],
-      summary: `${item.weight}% allocated to ${item.company} (${item.ticker}) with ${strategyMap[item.strategy].toLowerCase()}.`,
+      summary: `${item.weight}% allocated to ${item.company} (${item.ticker}) with ${strategyMap[item.strategy].toLowerCase()}.`
     });
   });
   renderBasket();
   updateChart();
+  refreshAllocations();
 }
 
 bindActions();

@@ -241,6 +241,18 @@ label {
   margin-bottom: 6px;
 }
 
+.price-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #b3bfd4;
+  margin-bottom: 8px;
+}
+
 .basket-card .weight {
   color: var(--accent);
   font-weight: 700;
