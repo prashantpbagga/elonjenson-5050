@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Index Basket Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero__content">
+      <p class="eyebrow">Automate your convictions</p>
+      <h1>Design a basket. Invest on autopilot. Track against the market.</h1>
+      <p class="lede">Blend your favorite companies into a personal index, set a contribution rhythm, and see how your strategy stacks up to the S&amp;P 500 and NASDAQ — historically and through forward scenarios.</p>
+      <div class="cta-row">
+        <button class="btn primary" id="start-plan">Start a plan</button>
+        <button class="btn ghost" id="learn-more">Preview a projection</button>
+      </div>
+      <div class="badge-row">
+        <span class="badge">Fractional investing</span>
+        <span class="badge">Auto-rebalance</span>
+        <span class="badge">Performance vs benchmarks</span>
+      </div>
+    </div>
+    <div class="hero__glass">
+      <div class="stat-grid">
+        <div class="stat">
+          <p class="label">Projected 5Y target</p>
+          <p class="value" id="proj-target">+48.2%</p>
+          <p class="sub">Assumes $500/month, 7.5% CAGR</p>
+        </div>
+        <div class="stat">
+          <p class="label">Benchmark drift</p>
+          <p class="value" id="drift">-1.4%</p>
+          <p class="sub">vs S&amp;P 500 over the past 3Y</p>
+        </div>
+        <div class="stat">
+          <p class="label">Volatility score</p>
+          <p class="value" id="volatility">Low</p>
+          <p class="sub">Based on blend and weights</p>
+        </div>
+      </div>
+      <canvas id="performanceChart" height="180"></canvas>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Build your basket</p>
+          <h2>Pick companies &amp; dial in weights</h2>
+        </div>
+        <div class="invest-toggle">
+          <label for="frequency">Contribution cadence</label>
+          <select id="frequency">
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="one-time">One-time burst</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label for="company">Company</label>
+          <input id="company" type="text" placeholder="Tesla" />
+        </div>
+        <div>
+          <label for="ticker">Ticker</label>
+          <input id="ticker" type="text" placeholder="TSLA" />
+        </div>
+        <div>
+          <label for="weight">Target weight (%)</label>
+          <input id="weight" type="number" min="1" max="100" step="1" placeholder="20" />
+        </div>
+        <div>
+          <label for="strategy">Strategy</label>
+          <select id="strategy">
+            <option value="steady">Steady drip</option>
+            <option value="opportunistic">Opportunistic (async)</option>
+            <option value="value">Value tilt</option>
+            <option value="growth">Growth tilt</option>
+          </select>
+        </div>
+        <button class="btn primary" id="add-company">Add to basket</button>
+      </div>
+      <div class="basket" id="basket"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Automation</p>
+          <h2>Invest on your terms</h2>
+        </div>
+      </div>
+      <div class="automation">
+        <div class="automation__card">
+          <h3>Recurring</h3>
+          <p>Lock in consistency with automated contributions. We’ll rebalance to your weights every cycle.</p>
+          <div class="field-row">
+            <label for="recurring-amount">Amount</label>
+            <input id="recurring-amount" type="number" placeholder="$500" />
+          </div>
+          <button class="btn secondary" id="start-recurring">Schedule</button>
+        </div>
+        <div class="automation__card">
+          <h3>Async opportunities</h3>
+          <p>Deploy when the market blinks. Queue dry powder and spend it on dips or catalysts.</p>
+          <div class="field-row">
+            <label for="async-amount">Reserve</label>
+            <input id="async-amount" type="number" placeholder="$1,000" />
+          </div>
+          <button class="btn secondary" id="start-async">Arm the strategy</button>
+        </div>
+        <div class="automation__card highlight">
+          <h3>Performance guardrails</h3>
+          <p>Compare your basket to S&amp;P 500 and NASDAQ baselines. We’ll alert when drift exceeds your threshold.</p>
+          <div class="field-row">
+            <label for="guardrail">Drift threshold</label>
+            <input id="guardrail" type="number" placeholder="5%" />
+          </div>
+          <button class="btn secondary" id="set-guardrail">Set guardrail</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Performance lab</p>
+          <h2>Past &amp; future views</h2>
+        </div>
+      </div>
+      <div class="lab-grid">
+        <div class="lab-card">
+          <h3>Backtest</h3>
+          <p>Your basket’s last 3 years vs. S&amp;P 500 and NASDAQ. Adjust weights to see how resilience shifts.</p>
+          <div class="metric-row">
+            <span>Basket 3Y CAGR</span>
+            <strong id="basket-cagr">11.8%</strong>
+          </div>
+          <div class="metric-row">
+            <span>S&amp;P 500 3Y CAGR</span>
+            <strong id="sp-cagr">10.6%</strong>
+          </div>
+          <div class="metric-row">
+            <span>NASDAQ 3Y CAGR</span>
+            <strong id="nasdaq-cagr">12.9%</strong>
+          </div>
+        </div>
+        <div class="lab-card">
+          <h3>Forward scenarios</h3>
+          <p>Project outcomes with different growth rates and contribution styles.</p>
+          <div class="scenario">
+            <label for="growth">Expected CAGR</label>
+            <input id="growth" type="number" value="7.5" step="0.1" />
+          </div>
+          <div class="scenario">
+            <label for="projection">Projection years</label>
+            <input id="projection" type="number" value="5" min="1" max="30" />
+          </div>
+          <button class="btn primary" id="simulate">Simulate</button>
+          <div class="projection" id="projection-output"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>
+      <h3>Index Basket Studio</h3>
+      <p>Crafted for investors who want control, automation, and clarity.</p>
+    </div>
+    <div class="footer__links">
+      <a href="#">How it works</a>
+      <a href="#">Security</a>
+      <a href="#">Support</a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
