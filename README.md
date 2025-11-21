@@ -36,3 +36,21 @@ npm test
 
 ## Deployment/hosting notes
 The server binds to `0.0.0.0` by default, so it’s ready for platforms that expose `$PORT` (e.g., Render, Railway, Fly, Heroku). Ensure outbound HTTPS is allowed so quote fetching succeeds.
+
+### Deploy to Vercel
+This project ships a `vercel.json` that routes all requests to the Node handler so the static assets and `/api/*` endpoints stay unified.
+
+1. Install the Vercel CLI and log in:
+   ```bash
+   npm i -g vercel
+   vercel login
+   ```
+2. From the project root, deploy:
+   ```bash
+   vercel --prod
+   ```
+   The default settings detect `server.js` as an `@vercel/node` function and forward every path through it.
+3. To test locally with Vercel’s runtime emulation, run:
+   ```bash
+   vercel dev
+   ```

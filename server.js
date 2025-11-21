@@ -104,9 +104,15 @@ const router = async (req, res) => {
   res.end('Not found');
 };
 
-const port = process.env.PORT || 3000;
-createServer((req, res) => {
+// Export a handler for serverless platforms like Vercel
+export default function handler(req, res) {
   router(req, res);
-}).listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
-});
+}
+
+// Only start a long-lived server when running locally
+if (!process.env.VERCEL) {
+  const port = process.env.PORT || 3000;
+  createServer(handler).listen(port, () => {
+    console.log(`Server listening on http://localhost:${port}`);
+  });
+}
